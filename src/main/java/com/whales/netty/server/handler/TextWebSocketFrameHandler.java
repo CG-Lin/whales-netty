@@ -1,5 +1,8 @@
 package com.whales.netty.server.handler;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.whales.netty.server.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
@@ -11,6 +14,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
@@ -18,9 +22,12 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
     /**
      * 存储用户对应的通道
+     * ChannelHandlerContext 代表了 ChannelHandler 和 ChannelPipeline 之间的关联，ChannelHandlerContext 的主要功能是管理它所关联的 ChannelHandler 和在
+     * 同一个 ChannelPipeline 中的其他 ChannelHandler 之间的交互
      */
     private final Map<String, List<ChannelHandlerContext>> channelHandlerContextMap = new ConcurrentHashMap<>();
 
+    private final List<ChannelHandlerContext> channelHandleContextList = new CopyOnWriteArrayList<>();
 
 
     public TextWebSocketFrameHandler(ChannelGroup channelGroup) {
@@ -29,6 +36,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        channelHandleContextList.add(ctx);
         //TODO 测试群聊的
         System.out.println("新的链接进入：" + ctx.channel().remoteAddress() + ",连接总数量" + ch);
     }
@@ -36,6 +44,21 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) throws Exception {
+        //前端发来信息，转为message
+        Message message = JSONObject.parseObject(textWebSocketFrame.text(), Message.class);
+        //处理客户端（发送者）的聊天信息-单对单
+        //接收人id
+        String receiveUserId = message.getReceiveUserId();
+        //接收者
+        String receive = message.getReceive();
+        //发送者
+        String send = message.getSend();
+        //发送者id
+        String sendUserId = message.getSendUserId();
+        //从缓存中去除对用的用户通道
+        //TODO 引入redis，将用户ID和用户连接
+        channelHandlerContextMap.get(receiveUserId);
+
         //增加引用计数，避免被释放，并且输出
         channelGroup.writeAndFlush(textWebSocketFrame.retain());
     }

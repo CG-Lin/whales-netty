@@ -26,7 +26,7 @@ public class GroupRequestHandler extends SimpleChannelInboundHandler<GroupCreate
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         //TODO 测试群聊的
-        System.out.println("新的链接进入：" + ctx.channel().remoteAddress() + ",连接总数量" +);
+        System.out.println("新的链接进入：" + ctx.channel().remoteAddress());
     }
 
     //GroupCreateMessage中记录了群名和对应的群成员账户

@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -25,7 +26,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
      * ChannelHandlerContext 代表了 ChannelHandler 和 ChannelPipeline 之间的关联，ChannelHandlerContext 的主要功能是管理它所关联的 ChannelHandler 和在
      * 同一个 ChannelPipeline 中的其他 ChannelHandler 之间的交互
      */
-    private final Map<String, List<ChannelHandlerContext>> channelHandlerContextMap = new ConcurrentHashMap<>();
+    private final Map<String, ChannelHandlerContext> channelHandlerContextMap = new ConcurrentHashMap<>();
 
     private final List<ChannelHandlerContext> channelHandleContextList = new CopyOnWriteArrayList<>();
 
@@ -38,7 +39,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channelHandleContextList.add(ctx);
         //TODO 测试群聊的
-        System.out.println("新的链接进入：" + ctx.channel().remoteAddress() + ",连接总数量" + ch);
+        System.out.println("新的链接进入：" + ctx.channel().remoteAddress() + ",连接总数量");
     }
 
 
@@ -55,12 +56,16 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
         String send = message.getSend();
         //发送者id
         String sendUserId = message.getSendUserId();
-        //从缓存中去除对用的用户通道
+        //从缓存中去查出的用户通道
         //TODO 引入redis，将用户ID和用户连接
-        channelHandlerContextMap.get(receiveUserId);
-
+         ChannelHandlerContext channelHandlerContexts = channelHandlerContextMap.get(receiveUserId);
+        if (channelHandlerContexts != null) {
+            //TODO 头像也要存在redis好拿取
+            Message messageSend = new Message(UUID.randomUUID().toString(), send, sendUserId, receive, receiveUserId, message.getInfo(), message.getFileType(), message.getType(), null);
+        }
+/*        channelHandlerContexts.writeAndFlush(messageSend);
         //增加引用计数，避免被释放，并且输出
-        channelGroup.writeAndFlush(textWebSocketFrame.retain());
+        channelGroup.writeAndFlush(textWebSocketFrame.retain());*/
     }
 
     //自定义事件

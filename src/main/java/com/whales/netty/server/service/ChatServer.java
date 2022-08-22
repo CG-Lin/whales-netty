@@ -1,5 +1,6 @@
 package com.whales.netty.server.service;
 
+import com.whales.netty.server.handler.StompWebSocketFrameHandler;
 import com.whales.netty.server.handler.TextWebSocketFrameHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -11,6 +12,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.codec.stomp.StompSubframeDecoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +35,7 @@ public class ChatServer {
             bootstrap.group(boss,work).channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
+
                     //将字节解码为HttpRequest、HttpContent和LastHttpContent
                     socketChannel.pipeline().addLast(new HttpServerCodec());
                     //写入一个文件的内容
@@ -43,6 +46,10 @@ public class ChatServer {
                     socketChannel.pipeline().addLast(new WebSocketServerProtocolHandler("/ws"));
 
                     socketChannel.pipeline().addLast(new TextWebSocketFrameHandler(channelGroup));
+                    //对Stomp帧数进行节码
+                    socketChannel.pipeline().addLast(new StompSubframeDecoder());
+
+                    socketChannel.pipeline().addLast(new StompWebSocketFrameHandler());
 
                 }
             });

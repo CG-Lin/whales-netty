@@ -62,6 +62,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
         if (channelHandlerContexts != null) {
             //TODO 头像也要存在redis好拿取
             Message messageSend = new Message(UUID.randomUUID().toString(), send, sendUserId, receive, receiveUserId, message.getInfo(), message.getFileType(), message.getType(), null);
+            channelHandlerContexts.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(messageSend)));
         }
 /*        channelHandlerContexts.writeAndFlush(messageSend);
         //增加引用计数，避免被释放，并且输出

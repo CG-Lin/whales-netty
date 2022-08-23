@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Spring Boot+WebSocket+广播式</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.5.1.min.js"></script>
+</head>
+<body onload="disconnect()">
+<noscript><h2 style="color: #ff0000">貌似你的浏览器不支持websocket</h2></noscript>
+<div>
+<!--    <div>
+        <button id="enter" onclick="enter();">进入群聊</button>
+        <button id="esc" disabled="disabled" onclick="disconnect();">退出群聊</button>
+    </div>-->
+    <div>
+        <button id="connect" onclick="connect();">进入群聊</button>
+        <button id="disconnect" disabled="disabled" onclick="disconnect();">退出群聊</button>
+    </div>
+    <div id="conversationDiv">
+        <form action="/photos/1148973713/13242366884" method="post" enctype="multipart/form-data" target="rfFrame">
+            <input type="file" id="file" name="file">
+            <input type="submit" value="提交" /><p>
+        </form>
+        <iframe id="rfFrame" name="rfFrame" src="about:blank" style="display:none;"></iframe>
+        <label>输入你的名字</label><input type="text" id="name" />
+        <button id="sendName" onclick="sendName();">发送</button>
+        <p id="response"></p>
+        <img id="photos"/>
+    </div>
+</div>
+<script type="text/javascript">
+    var stompClient = null;
+
+    function setConnected(connected) {
+        document.getElementById('connect').disabled = connected;
+        document.getElementById('disconnect').disabled = !connected;
+        document.getElementById('conversationDiv').style.visibility = connected ? 'visible' : 'hidden';
+        $('#response').html();
+    }
+
+    function connect() {
+        // 连接 SockJs 的 endpoint 名称为 "/whaleSocial"
+        var socket = new SockJS('/whaleSocial');
+        // 使用 STOMP 子协议的 WebSocket 客户端
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame) {
+            setConnected(true);
+            console.log('Connected: ' + frame);
+            //发送消息
+            stompClient.send("/group/status/1148973713/13242366884",{});
+            //stompClient.send("/group/status/1148973713/18819776464",{});
+            // 通过 stompClient.subscribe 订阅 /member/13242366884 目标发送的信息，对应控制器的 SendTo 定义
+            //stompClient.subscribe('/member/1148973713/13242366884', function(respnose)
+            stompClient.subscribe('/member/photos/1148973713', function(respnose){
+                console.log("This is:"+respnose.body)
+                // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
+                showPhotosResponse(respnose.body);
+            });
+            stompClient.subscribe('/member/1148973713', function(respnose){
+                console.log("This is:"+respnose.body)
+                // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
+                showResponse(respnose.body);
+            });
+        });
+    }
+
+    function sendPhoto(){
+        var file = document.getElementById('filename').files[0]
+        alert("This is:"+file)
+        // 连接 SockJs 的 endpoint 名称为 "/whaleSocial"
+        var socket = new SockJS('/whaleSocial');
+        // 使用 STOMP 子协议的 WebSocket 客户端
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame){
+            stompClient.send("/group/photos/1148973713",{});
+        });
+
+    }
+
+    function disconnect() {
+        // 断开连接
+        if (stompClient != null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        console.log("Disconnected");
+    }
+
+    function sendName() {
+        // 向服务端发送消息
+        var name = $('#name').val();
+        // 通过 stompClient.send 向 /hello （服务端）发送信息，对应控制器 @MessageMapping 中的定义
+        stompClient.send("/group/chat/1148973713", {}, JSON.stringify({ 'communicationGroupId': '1148973713','userId':'13242366884','userInformationTime':'','informationSign':'DA12749QWER34QWER','userInformation':name }));
+        //stompClient.send("/group/status/1148973713/13242366884", {}, JSON.stringify({ 'name': name }));
+    }
+
+    function showResponse(message) {
+        // 接收返回的消息
+        var response = $("#response");
+        response.html(message);
+    }
+
+    function showPhotosResponse(message){
+        $("#photos").attr("src",message)
+    }
+</script>
+</body>
+<!--<body>
+<div>
+    <button id="connect">连接</button>
+    <button id="disconnect" disabled="disabled">断开</button>
+</div>
+<div>
+    <h3>广播形式</h3>
+    <button id="broadcastButton">发送</button><input id="broadcastText" type="text">
+    <label>广播消息：</label><input id="broadcastMsg" type="text" disabled="disabled">
+</div>
+<div>
+    <h3>订阅形式</h3>
+    <label>订阅消息：</label><input id="subscribeMsg" type="text" disabled="disabled">
+</div>
+<div>
+    <h3>角色形式</h3>
+    <button id="userButton">发送</button><input id="userText" type="text">
+    <label>用户消息：</label><input id="userMsg" type="text" disabled="disabled">
+</div>
+<div>
+    <h3>无APP</h3>
+    <button id="appButton">发送</button><input id="appText" type="text">
+    <label>前端消息：</label><input id="appMsg" type="text" disabled="disabled">
+</div>
+</body>
+<script>
+    var stomp = null;
+    $("#connect").click(function () {
+        var url = "http://localhost:11000/whaleSocial"
+        var socket = new SockJS(url);
+        stomp = Stomp.over(socket);
+        //连接
+        stomp.connect({}, function (frame) {
+            //订阅广播
+            stomp.subscribe("/topic/broadcast", function (res) {
+                $("#broadcastMsg").val(res.body);
+            });
+            //订阅，一般只有订阅的时候在返回
+            stomp.subscribe("/app/subscribe/1", function (res) {
+                $("#subscribeMsg").val(res.body);
+            });
+            //用户模式
+            stomp.subscribe("/user/queue/one", function (res) {
+                $("#userMsg").val(res.body);
+            });
+            //无APP
+            stomp.subscribe("/topic/app", function (res) {
+                $("#appMsg").val(res.body);
+            });
+            setConnect(true);
+        });
+    });
+
+    $("#disconnect").click(function () {
+        if (stomp != null) {
+            stomp.disconnect();
+        }
+        setConnect(false);
+    });
+    //设置按钮
+    function setConnect(connectStatus) {
+        $("#connect").attr("disabled", connectStatus);
+        $("#disconnect").attr("disabled", !connectStatus);
+    }
+
+    //发送广播消息
+    $("#broadcastButton").click(function () {
+        stomp.send("/app/broadcast", {}, JSON.stringify({"body":$("#broadcastText").val()}))
+    });
+
+    //发送用户消息
+    $("#userButton").click(function () {
+        stomp.send("/app/one", {}, JSON.stringify({"body":$("#userText").val()}))
+    });
+
+    //发送web消息
+    $("#appButton").click(function () {
+        stomp.send("/topic/app", {}, JSON.stringify({"body":$("#appText").val()}))
+    });
+</script>-->
+</html>

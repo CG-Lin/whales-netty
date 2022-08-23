@@ -1,5 +1,6 @@
 package com.whales.netty.test;
 
+import com.whales.netty.server.handler.StompWebSocketFrameHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -33,17 +34,11 @@ public class HelloServer {
                                 // 6. 添加具体 handler
                                 ch.pipeline().addLast(new LoggingHandler());
                                 ch.pipeline().addLast(new StringDecoder()); // 将 ByteBuf 转换为字符串
-                                ch.pipeline().addLast(new SimpleChannelInboundHandler<Integer>() { // 自定义 handler
-                                    @Override // 读事件
-                                    public void channelRead0(ChannelHandlerContext ctx, Integer msg) throws Exception {
-                                        //ctx.write(msg+"*2");
-                                        System.out.println("msg1:"+msg); // 打印上一步转换好的字符串
-                                    }
-                                });
+                                ch.pipeline().addLast(new StompWebSocketFrameHandler());
                                 ch.pipeline().addLast(new SimpleChannelInboundHandler<String>() { // 自定义 handler
                                     @Override // 读事件
                                     public void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-                                        System.out.println("msg2:"+msg); // 打印上一步转换好的字符串
+                                        System.out.println("msg2:" + msg); // 打印上一步转换好的字符串
                                     }
                                 });
                             }

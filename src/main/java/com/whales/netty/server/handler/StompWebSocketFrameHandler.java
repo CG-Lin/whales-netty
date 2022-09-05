@@ -19,6 +19,8 @@ public class StompWebSocketFrameHandler extends SimpleChannelInboundHandler<Stom
                 StompFrame frame = new DefaultStompFrame(StompCommand.SEND);
                 //frame.headers().set(StompHeaders.DESTINATION,StompClient.TOPIC);
                 frame.content().writeBytes("some payload".getBytes());
+                ctx.writeAndFlush(frame);
+                break;
         }
         String messageContent = stompFrame.content().toString(StandardCharsets.UTF_8);
         //前端发来信息，转为message

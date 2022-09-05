@@ -15,7 +15,8 @@
             <button id="esc" disabled="disabled" onclick="disconnect();">退出群聊</button>
         </div>-->
     <div>
-        <button id="connect" onclick="connectWebSocket();">进入群聊</button>
+        <!--<button id="connect" onclick="connect();">进入群聊</button>-->
+        <button id="connect" onclick="connect();">进入群聊</button>
         <button id="disconnect" disabled="disabled" onclick="disconnect();">退出群聊</button>
     </div>
     <div id="conversationDiv">
@@ -42,39 +43,23 @@
         $('#response').html();
     }
 
-    function connectWebSocket() {
-        var url = "ws://localhost:8095/group";
-        var socket = new WebSocket(url);
-
-        socket.onopen = function () {
-            console.log("This is success!")
-            sendMessage()
-        }
-
-        function sendMessage(){
-            socket.send("Some message has handler")
-        }
-    }
-
     function connect() {
         // 连接 SockJs 的 endpoint 名称为 "/whaleSocial"
-        var socket = new SockJS('/whaleSocial', null, {timeout: 15000});
+        var url = "ws://127.0.0.1:8500/whaleSocial"
+        //var socket = new SockJS(url);
         // 使用 STOMP 子协议的 WebSocket 客户端
-        stompClient = Stomp.over(socket);
+        //stompClient = Stomp.over(socket)
+        stompClient = Stomp.client(url);
+
         stompClient.connect({}, function (frame) {
             setConnected(true);
             console.log('Connected: ' + frame);
             //发送消息
             //stompClient.send("/group/status/15363872945/13242366884",{});
-            stompClient.send("/group/status/1148973713/18819776464", {});
+            //stompClient.send("/group/status/1148973713/18819776464", {});
             // 通过 stompClient.subscribe 订阅 /member/13242366884 目标发送的信息，对应控制器的 SendTo 定义
             //stompClient.subscribe('/member/1148973713/13242366884', function(respnose)
-            stompClient.subscribe('/member/photos/1148973713', function (respnose) {
-                console.log("This is:" + respnose.body)
-                // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
-                showPhotosResponse(respnose.body);
-            });
-            stompClient.subscribe('/member/1148973713', function (respnose) {
+            stompClient.subscribe('/member/netty', function (respnose) {
                 console.log("This is:" + respnose.body)
                 // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
                 showResponse(respnose.body);
@@ -95,13 +80,7 @@
         // 向服务端发送消息
         var name = $('#name').val();
         // 通过 stompClient.send 向 /hello （服务端）发送信息，对应控制器 @MessageMapping 中的定义
-        stompClient.send("/group/chat/1148973713", {}, JSON.stringify({
-            'communicationGroupId': '1148973713',
-            'userId': '13242366884',
-            'userInformationTime': '',
-            'informationSign': '',
-            'userInformation': name
-        }));
+        stompClient.send("/member/netty", {'content-type':'application/json'}, JSON.stringify({ 'communicationGroupId': '1148973713','userId':'13242366884','userInformationTime':'','informationSign':'','userInformation':name }));
         //stompClient.send("/group/status/1148973713/13242366884", {}, JSON.stringify({ 'name': name }));
     }
 

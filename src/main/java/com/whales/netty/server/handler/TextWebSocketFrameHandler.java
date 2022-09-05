@@ -6,12 +6,10 @@ import com.whales.netty.server.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 import java.util.List;
 import java.util.Map;
@@ -23,13 +21,6 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
     private final ChannelGroup channelGroup;
 
-    public TextWebSocketFrameHandler(ChannelGroup channelGroup) {
-        this.channelGroup = channelGroup;
-    }
-
-    public ChannelGroup getChannelGroup() {
-        return channelGroup;
-    }
     /**
      * 存储用户对应的通道
      * ChannelHandlerContext 代表了 ChannelHandler 和 ChannelPipeline 之间的关联，ChannelHandlerContext 的主要功能是管理它所关联的 ChannelHandler 和在
@@ -38,6 +29,11 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
     private final Map<String, ChannelHandlerContext> channelHandlerContextMap = new ConcurrentHashMap<>();
 
     private final List<ChannelHandlerContext> channelHandleContextList = new CopyOnWriteArrayList<>();
+
+
+    public TextWebSocketFrameHandler(ChannelGroup channelGroup) {
+        this.channelGroup = channelGroup;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -49,8 +45,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) throws Exception {
-
-        System.out.println("Client id"+channelHandlerContext.channel().id()+", This was success,TextWebSocketFrame.text was out:" + textWebSocketFrame.text());
+        System.out.println("textWebSocketFrame go in,Then message is :"+textWebSocketFrame.text());
         //前端发来信息，转为message
         Message message = JSONObject.parseObject(textWebSocketFrame.text(), Message.class);
         //处理客户端（发送者）的聊天信息-单对单
@@ -64,7 +59,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
         String sendUserId = message.getSendUserId();
         //从缓存中去查出的用户通道
         //TODO 引入redis，将用户ID和用户连接
-        ChannelHandlerContext channelHandlerContexts = channelHandlerContextMap.get(receiveUserId);
+         ChannelHandlerContext channelHandlerContexts = channelHandlerContextMap.get(receiveUserId);
         if (channelHandlerContexts != null) {
             //TODO 头像也要存在redis好拿取
             Message messageSend = new Message(UUID.randomUUID().toString(), send, sendUserId, receive, receiveUserId, message.getInfo(), message.getFileType(), message.getType(), null);
@@ -81,7 +76,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
         //判断是否握手成功，通道升级到websockets
         if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
             //如果握手成功说明升级成了websocket协议
-            channelGroup.writeAndFlush(new TextWebSocketFrame("Client:" + ctx.channel() + "Joined"+this.getChannelGroup()));
+            channelGroup.writeAndFlush(new TextWebSocketFrame("Client:" + ctx.channel() + "Joined"));
             //将新的websocket channel加入到channel group 以便后面它接收到所有消息
             channelGroup.add(ctx.channel());
         } else {

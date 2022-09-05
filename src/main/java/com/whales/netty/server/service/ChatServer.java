@@ -25,20 +25,22 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class ChatServer implements ApplicationRunner {
-    /**
-     * TODO 根据服务器传进来的id，分配到不同的group
-     */
-    private static final ChannelGroup group = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
+
+    private final String chatPath = "/chat";
+
+    private final ChannelGroup channelGroup =
+            new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
+
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        ServerBootstrap serverBootstrap = new ServerBootstrap();
 
         EventLoopGroup boss = new NioEventLoopGroup();
-        EventLoopGroup worker = new NioEventLoopGroup();
+        EventLoopGroup work = new NioEventLoopGroup();
 
-        try{
-            serverBootstrap.group(boss,worker).channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(boss, work).channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
 
@@ -49,9 +51,9 @@ public class ChatServer implements ApplicationRunner {
                     //将一个HttpMessage和跟随它的多个HttpContent聚合为单个FullHttpRequest或则FullHttpResponse。安装完后ChannelPipeline中下一个ChannelHandler将只会收到完整的Http请求或相应
                     socketChannel.pipeline().addLast(new HttpObjectAggregator(64 * 1024));
                     //按照WebSocket规范要求。处理websocket升级握手
-                    socketChannel.pipeline().addLast(new WebSocketServerProtocolHandler("/group"));
+                    socketChannel.pipeline().addLast(new WebSocketServerProtocolHandler(chatPath));
 
-                    socketChannel.pipeline().addLast(new TextWebSocketFrameHandler(group));
+                    socketChannel.pipeline().addLast(new TextWebSocketFrameHandler(channelGroup));
 /*                    //对Stomp帧数进行节码
                     socketChannel.pipeline().addLast(new StompSubframeDecoder());
 
@@ -59,13 +61,10 @@ public class ChatServer implements ApplicationRunner {
 
                 }
             });
-            Channel channel = serverBootstrap.bind(8095).sync().channel();
+            Channel channel = bootstrap.bind(8081).sync().channel();
             channel.closeFuture().sync();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-        }finally {
-            boss.shutdownGracefully();
-            worker.shutdownGracefully();
         }
     }
 }

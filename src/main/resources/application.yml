@@ -1,0 +1,10 @@
+server:
+  port: 8085
+
+spring:
+  mvc:
+    static-path-pattern: /static/**
+  redis:
+    host: 124.221.124.214
+    port: 6380
+    password: KGF6S42GH3AS7VA349DF7241

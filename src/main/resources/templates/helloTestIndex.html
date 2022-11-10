@@ -46,6 +46,7 @@
     function connect() {
         // 连接 SockJs 的 endpoint 名称为 "/whaleSocial"
         var url = "ws://127.0.0.1:8500/whaleSocial"
+        //var url = "http://127.0.0.1:8500/whaleSocial"
         //var socket = new SockJS(url);
         // 使用 STOMP 子协议的 WebSocket 客户端
         //stompClient = Stomp.over(socket)
@@ -59,7 +60,7 @@
             //stompClient.send("/group/status/1148973713/18819776464", {});
             // 通过 stompClient.subscribe 订阅 /member/13242366884 目标发送的信息，对应控制器的 SendTo 定义
             //stompClient.subscribe('/member/1148973713/13242366884', function(respnose)
-            stompClient.subscribe('/member/netty', function (respnose) {
+            stompClient.subscribe('/member/netty/13242366884/1148973713', function (respnose) {
                 console.log("This is:" + respnose.body)
                 // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
                 showResponse(respnose.body);

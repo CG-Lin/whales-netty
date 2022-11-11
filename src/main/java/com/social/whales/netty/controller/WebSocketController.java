@@ -15,6 +15,10 @@ public class WebSocketController {
         return "helloTestIndex.html";
     }
 
+    /**
+     * 测试打开WebSocket首页
+     * @return
+     */
     @GetMapping("/indexWebSocket")
     public String indexHtml(){
         return "indexWebSocket.html";

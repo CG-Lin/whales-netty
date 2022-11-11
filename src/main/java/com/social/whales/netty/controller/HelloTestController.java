@@ -14,7 +14,7 @@ public class HelloTestController {
     WhalesChatGroupOnlineService whalesChatGroupOnlineService;
 
     /**
-     * 测试Redis是否可用，测试Gitea提交
+     * 测试Redis是否可用
      * @return
      */
     @GetMapping("/hello/test")

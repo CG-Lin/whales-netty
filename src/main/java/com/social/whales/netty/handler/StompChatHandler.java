@@ -19,7 +19,6 @@ package com.social.whales.netty.handler;
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.util.ArrayBuilders;
 import com.social.whales.netty.WhalesNettyApplication;
-import com.social.whales.netty.factory.WhalesChatGroupOnlineFactory;
 import com.social.whales.netty.server.StompSubscription;
 import com.social.whales.netty.enums.StompVersion;
 import com.social.whales.netty.service.WhalesChatGroupOnlineService;

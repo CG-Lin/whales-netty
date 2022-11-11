@@ -31,6 +31,12 @@ public class WhalesNettyApplication implements ApplicationContextAware {
         defaultListableBeanFactory = (DefaultListableBeanFactory)applicationContext.getAutowireCapableBeanFactory();
     }
 
+    /**
+     * 获取容器
+     * @param clazz
+     * @param <T>
+     * @return
+     */
     public static <T> T getBean(Class<T> clazz) {
         BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(clazz);
         String className = clazz.getName();

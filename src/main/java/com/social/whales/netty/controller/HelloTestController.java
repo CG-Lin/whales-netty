@@ -13,6 +13,10 @@ public class HelloTestController {
     @Autowired
     WhalesChatGroupOnlineService whalesChatGroupOnlineService;
 
+    /**
+     * 测试Redis是否可用
+     * @return
+     */
     @GetMapping("/hello/test")
     @ResponseBody
     public Boolean helloTest(){

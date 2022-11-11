@@ -6,6 +6,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class WebSocketController {
 
+    /**
+     * 测试打开WebSocket首页
+     * @return
+     */
     @GetMapping("/community")
     public String webSocketHtml(){
         return "helloTestIndex.html";

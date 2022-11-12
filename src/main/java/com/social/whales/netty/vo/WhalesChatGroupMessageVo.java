@@ -27,9 +27,9 @@ public class WhalesChatGroupMessageVo {
     private Date messageTime;
 
     /**
-     * 信息标记序列号（群里每有人发一个消息就）
+     * 信息标记序列号（群里每有人发一个消息就新增）
      */
-    private String messageSign;
+    private Long messageSign;
 
     /**
      * 聊天记录

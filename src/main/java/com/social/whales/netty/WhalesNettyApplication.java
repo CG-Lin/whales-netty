@@ -43,4 +43,16 @@ public class WhalesNettyApplication implements ApplicationContextAware {
         defaultListableBeanFactory.registerBeanDefinition(className, beanDefinitionBuilder.getBeanDefinition());
         return (T) applicationContext.getBean(className);
     }
+
+    /**
+     * 释放容器
+     * @param clazz
+     * @param <T>
+     * @return
+     */
+    public static <T> void  destroyBean(Class<T> clazz){
+        String className = clazz.getName();
+        defaultListableBeanFactory.removeBeanDefinition(className);
+        System.out.println("destroy " + className);
+    }
 }

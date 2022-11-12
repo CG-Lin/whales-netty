@@ -18,7 +18,6 @@ package com.social.whales.netty.utils;
 import com.social.whales.netty.enums.StompVersion;
 import com.social.whales.netty.handler.StompChatHandler;
 import com.social.whales.netty.handler.StompWebSocketClientPageHandler;
-import com.social.whales.netty.service.WhalesChatGroupOnlineService;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;

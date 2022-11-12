@@ -60,7 +60,7 @@
             //stompClient.send("/group/status/1148973713/18819776464", {});
             // 通过 stompClient.subscribe 订阅 /member/13242366884 目标发送的信息，对应控制器的 SendTo 定义
             //stompClient.subscribe('/member/1148973713/13242366884', function(respnose)
-            stompClient.subscribe('/member/netty/13242366884/1148973713', function (respnose) {
+            stompClient.subscribe('/member/netty/13242366884/18819776464', function (respnose) {
                 console.log("This is:" + respnose.body)
                 // 展示返回的信息，只要订阅了 /member/13242366884 目标，都可以接收到服务端返回的信息
                 showResponse(respnose.body);
@@ -81,7 +81,7 @@
         // 向服务端发送消息
         var name = $('#name').val();
         // 通过 stompClient.send 向 /hello （服务端）发送信息，对应控制器 @MessageMapping 中的定义
-        stompClient.send("/member/netty", {'content-type':'application/json'}, JSON.stringify({ 'communicationGroupId': '1148973713','userId':'13242366884','userInformationTime':'','informationSign':'','userInformation':name }));
+        stompClient.send("/member/netty/13242366884/18819776464", {'content-type':'application/json'}, JSON.stringify({ 'chatGroupId': '1148973713','userId':'13242366884','messageTime':'','messageSign':'','messageContent':name }));
         //stompClient.send("/group/status/1148973713/13242366884", {}, JSON.stringify({ 'name': name }));
     }
 

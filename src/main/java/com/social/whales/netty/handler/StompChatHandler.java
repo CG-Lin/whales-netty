@@ -17,13 +17,12 @@ package com.social.whales.netty.handler;
 
 
 import com.alibaba.fastjson.JSON;
-import com.fasterxml.jackson.databind.util.ArrayBuilders;
 import com.social.whales.netty.WhalesNettyApplication;
 import com.social.whales.netty.server.StompSubscription;
 import com.social.whales.netty.enums.StompVersion;
-import com.social.whales.netty.service.WhalesChatGroupOnlineService;
-import com.social.whales.netty.service.impl.WhalesChatGroupOnlineServiceImpl;
-import com.social.whales.netty.vo.WhalesChatGroupOnlineVo;
+import com.social.whales.netty.service.WhalesChatGroupService;
+import com.social.whales.netty.service.impl.WhalesChatGroupServiceImpl;
+import com.social.whales.netty.vo.WhalesChatGroupMessageVo;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -34,12 +33,6 @@ import io.netty.handler.codec.stomp.DefaultStompFrame;
 import io.netty.handler.codec.stomp.StompCommand;
 import io.netty.handler.codec.stomp.StompFrame;
 import io.netty.util.CharsetUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -87,28 +80,30 @@ public class StompChatHandler extends SimpleChannelInboundHandler<StompFrame> {
     }
 
     private void onSubscribe(ChannelHandlerContext ctx, StompFrame inboundFrame) {
-        //检测stomp帧的头，业务到这一步代表着xx群员进入xx群
         String destination = inboundFrame.headers().getAsString(DESTINATION);
 
         String subscriptionId = inboundFrame.headers().getAsString(ID);
 
         System.out.println("1.2.1 inboundFrame.content ---------------------------------> " + inboundFrame.content() + " destination " + destination + " and " + subscriptionId);
-
         if (destination == null || subscriptionId == null) {
             sendErrorFrame("missed header", "Required 'destination' or 'id' header missed", ctx);
             return;
         }
-        //获取Stomp帧content携带内容
+
+        //92-101行代码属于业务内容，并不属于Stomp协议+Netty源码
+        //获取Stomp帧content携带内容,  检测stomp帧的头，业务到这一步代表着xx群员进入xx群
         String destinationUrl = inboundFrame.headers().get(DESTINATION).toString();
         //记录xxx群成员进入xxx群
-        //WhalesChatGroupOnlineVo whalesChatGroupOnlineVo = JSON.parseObject(content, WhalesChatGroupOnlineVo.class);
+        //格式：destination /member/netty/13242366884/1148973713 and sub-0
         List<String> urlList = Arrays.asList(destinationUrl.split("/"));
-        String chatGroupId = urlList.get(2);
-        String userId = urlList.get(3);
+        String chatGroupId = urlList.get(3);
+        String userId = urlList.get(4);
         //WhalesChatGroupOnlineFactory.getWhalesChatGroupOnlineService().saveWhalesChatGroupOnlineStatus(chatGroupId,userId);
-        WhalesChatGroupOnlineServiceImpl whalesChatGroupOnlineService = WhalesNettyApplication.getBean(WhalesChatGroupOnlineServiceImpl.class);
-        boolean resultBoolean = whalesChatGroupOnlineService.saveWhalesChatGroupOnlineStatus(chatGroupId, userId);
-        System.out.println("resultBoolean:"+resultBoolean);
+        //将群成员记录到redis记录中
+        WhalesChatGroupService whalesChatGroupService = WhalesNettyApplication.getBean(WhalesChatGroupServiceImpl.class);
+        whalesChatGroupService.saveWhalesChatGroupOnlineStatus(chatGroupId, userId);
+        //释放
+        WhalesNettyApplication.destroyBean(WhalesChatGroupServiceImpl.class);
 
         Set<StompSubscription> subscriptions = chatDestinations.get(destination);
         if (subscriptions == null) {
@@ -158,14 +153,20 @@ public class StompChatHandler extends SimpleChannelInboundHandler<StompFrame> {
 
         Set<StompSubscription> subscriptions = chatDestinations.get(destination);
 
-        System.out.println("1.1.2 subscriptions -------------------------------> " + JSON.toJSON(subscriptions).toString());
+        System.out.println("1.1.2 subscriptions -------------------------------> " + subscriptions.toString());
 
+        WhalesChatGroupService whalesChatGroupService = WhalesNettyApplication.getBean(WhalesChatGroupServiceImpl.class);
         for (StompSubscription subscription : subscriptions) {
 
             System.out.println("1.1.3 subscription -------------------------------> " + transformToMessage(inboundFrame, subscription));
 
             subscription.channel().writeAndFlush(transformToMessage(inboundFrame, subscription));
+
+            WhalesChatGroupMessageVo whalesChatGroupMessageVo = JSON.parseObject(inboundFrame.content().retainedDuplicate().toString(CharsetUtil.UTF_8), WhalesChatGroupMessageVo.class);
+            whalesChatGroupService.saveWhalesChatGroupMessages(whalesChatGroupMessageVo);
         }
+        //释放
+        WhalesNettyApplication.destroyBean(WhalesChatGroupServiceImpl.class);
     }
 
     private void onUnsubscribe(ChannelHandlerContext ctx, StompFrame inboundFrame) {
@@ -222,12 +223,11 @@ public class StompChatHandler extends SimpleChannelInboundHandler<StompFrame> {
         ctx.writeAndFlush(errorFrame).addListener(ChannelFutureListener.CLOSE);
     }
 
-    private static StompFrame transformToMessage(StompFrame sendFrame, StompSubscription subscription) {
+    private  static StompFrame transformToMessage(StompFrame sendFrame, StompSubscription subscription) {
 
         Charset charset = StandardCharsets.UTF_8;
 
-        System.out.println("1.3 textContent----------------------------->" + sendFrame.content().retainedDuplicate().toString(CharsetUtil.UTF_8));
-
+        //System.out.println("1.3 textContent----------------------------->" + sendFrame.content().retainedDuplicate().toString(CharsetUtil.UTF_8));
         //StompFrame messageFrame = new TextStompEntity(StompCommand.MESSAGE,sendFrame.content().retainedDuplicate(), sendFrame.content().retainedDuplicate().toString());
         StompFrame messageFrame = new DefaultStompFrame(StompCommand.MESSAGE, sendFrame.content().retainedDuplicate());
         String id = UUID.randomUUID().toString();

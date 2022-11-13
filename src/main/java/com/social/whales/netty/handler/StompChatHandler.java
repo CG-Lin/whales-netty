@@ -20,8 +20,6 @@ import com.alibaba.fastjson.JSON;
 import com.social.whales.netty.WhalesNettyApplication;
 import com.social.whales.netty.server.StompSubscription;
 import com.social.whales.netty.enums.StompVersion;
-import com.social.whales.netty.service.WhalesChatGroupService;
-import com.social.whales.netty.service.impl.WhalesChatGroupServiceImpl;
 import com.social.whales.netty.vo.WhalesChatGroupMessageVo;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -90,21 +88,6 @@ public class StompChatHandler extends SimpleChannelInboundHandler<StompFrame> {
             return;
         }
 
-        //92-101行代码属于业务内容，并不属于Stomp协议+Netty源码
-        //获取Stomp帧content携带内容,  检测stomp帧的头，业务到这一步代表着xx群员进入xx群
-        String destinationUrl = inboundFrame.headers().get(DESTINATION).toString();
-        //记录xxx群成员进入xxx群
-        //格式：destination /member/netty/13242366884/1148973713 and sub-0
-        List<String> urlList = Arrays.asList(destinationUrl.split("/"));
-        String chatGroupId = urlList.get(3);
-        String userId = urlList.get(4);
-        //WhalesChatGroupOnlineFactory.getWhalesChatGroupOnlineService().saveWhalesChatGroupOnlineStatus(chatGroupId,userId);
-        //将群成员记录到redis记录中
-        WhalesChatGroupService whalesChatGroupService = WhalesNettyApplication.getBean(WhalesChatGroupServiceImpl.class);
-        whalesChatGroupService.saveWhalesChatGroupOnlineStatus(chatGroupId, userId);
-        //释放
-        WhalesNettyApplication.destroyBean(WhalesChatGroupServiceImpl.class);
-
         Set<StompSubscription> subscriptions = chatDestinations.get(destination);
         if (subscriptions == null) {
             subscriptions = new HashSet<StompSubscription>();
@@ -155,18 +138,13 @@ public class StompChatHandler extends SimpleChannelInboundHandler<StompFrame> {
 
         System.out.println("1.1.2 subscriptions -------------------------------> " + subscriptions.toString());
 
-        WhalesChatGroupService whalesChatGroupService = WhalesNettyApplication.getBean(WhalesChatGroupServiceImpl.class);
         for (StompSubscription subscription : subscriptions) {
 
             System.out.println("1.1.3 subscription -------------------------------> " + transformToMessage(inboundFrame, subscription));
 
             subscription.channel().writeAndFlush(transformToMessage(inboundFrame, subscription));
 
-            WhalesChatGroupMessageVo whalesChatGroupMessageVo = JSON.parseObject(inboundFrame.content().retainedDuplicate().toString(CharsetUtil.UTF_8), WhalesChatGroupMessageVo.class);
-            whalesChatGroupService.saveWhalesChatGroupMessages(whalesChatGroupMessageVo);
         }
-        //释放
-        WhalesNettyApplication.destroyBean(WhalesChatGroupServiceImpl.class);
     }
 
     private void onUnsubscribe(ChannelHandlerContext ctx, StompFrame inboundFrame) {
